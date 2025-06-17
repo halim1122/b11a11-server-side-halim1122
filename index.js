@@ -29,7 +29,7 @@ async function run() {
      try {
           // Connect the client to the server	(optional starting in v4.7)
           // await client.connect();
-          
+
           const AssignmentsCollection = client.db('AssignmentsBD').collection('Assignments')
 
           app.get('/assignments', async (req, res) => {
@@ -39,7 +39,7 @@ async function run() {
 
           app.get('/assignment/:id', async (req, res) => {
                const id = req.params.id;
-               const query = {_id: new ObjectId(id)};
+               const query = { _id: new ObjectId(id) };
                const result = await AssignmentsCollection.findOne(query);
                res.send(result)
           })
@@ -50,9 +50,21 @@ async function run() {
                res.send(result);
           })
 
+          app.put('/assignment/:id', async (req, res) => {
+               const id = req.params.id;
+               const query = { _id: new ObjectId(id) };
+               const Update =req.body;
+               const options = { upsert: true };
+               const UpdateDoc ={
+                    $set: Update
+               }
+               const result = await AssignmentsCollection.updateOne(query, UpdateDoc, options);
+               res.send(result);
+          })
+
           app.delete('/assignment/:id', async (req, res) => {
-               const id =req.params.id;
-               const query ={_id: new ObjectId(id)};
+               const id = req.params.id;
+               const query = { _id: new ObjectId(id) };
                const result = await AssignmentsCollection.deleteOne(query);
                res.send(result)
           })
