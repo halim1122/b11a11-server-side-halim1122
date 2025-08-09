@@ -1,13 +1,13 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const jwt = require('jsonwebtoken');
 const admin = require("firebase-admin");
+require('dotenv').config();
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+
 const decoded = Buffer.from(process.env.FB_SERVICE_KEY, 'base64').toString('utf-8')
 const serviceAccount = JSON.parse(decoded);
 
-require('dotenv').config();
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -23,23 +23,23 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 
-const verifyFireBaseToken = async(req, res, next) => {
-   const  authToken = req?.headers.authorization;
-   
-   if(!authToken || !authToken.startsWith('Bearer ')){
-    return res.status(401).send({message: 'unauthorized access'})
-   }
-   const token = authToken.split(' ')[1]
+const verifyFireBaseToken = async (req, res, next) => {
+  const authToken = req?.headers.authorization;
 
-   try {
+  if (!authToken || !authToken.startsWith('Bearer ')) {
+    return res.status(401).send({ message: 'unauthorized access' })
+  }
+  const token = authToken.split(' ')[1]
+
+  try {
     const decoded = await admin.auth().verifyIdToken(token);
     console.log('decoded token', decoded);
     req.decoded = decoded;
-   next()
-   }
-   catch (error) {
-    return res.status(401).send({message: 'unauthorized access'})
-   }
+    next()
+  }
+  catch (error) {
+    return res.status(401).send({ message: 'unauthorized access' })
+  }
 
 }
 
@@ -77,32 +77,32 @@ async function run() {
       res.send(result);
     });
 
-   app.get('/submissions', async (req, res, next) => {
-  try {
-    const { status, submittedBy } = req.query;
-    const query = {};
+    app.get('/submissions', async (req, res, next) => {
+      try {
+        const { status, submittedBy } = req.query;
+        const query = {};
 
-    if (submittedBy) {
-      return verifyFireBaseToken(req, res, async () => {
-        if (req.decoded.email !== submittedBy) {
-          return res.status(403).send({ message: "forbidden access" });
+        if (submittedBy) {
+          return verifyFireBaseToken(req, res, async () => {
+            if (req.decoded.email !== submittedBy) {
+              return res.status(403).send({ message: "forbidden access" });
+            }
+            if (status) query.status = status;
+            query.submittedBy = submittedBy;
+            const result = await SubmissionsCollection.find(query).toArray();
+            return res.json(result);
+          });
         }
+
         if (status) query.status = status;
-        query.submittedBy = submittedBy;
+
         const result = await SubmissionsCollection.find(query).toArray();
-        return res.json(result);
-      });
-    }
-
-    if (status) query.status = status;
-
-    const result = await SubmissionsCollection.find(query).toArray();
-    res.json(result);
-  } catch (error) {
-    console.error("Error fetching submissions:", error);
-    res.status(500).json({ error: "Failed to fetch submissions" });
-  }
-});
+        res.json(result);
+      } catch (error) {
+        console.error("Error fetching submissions:", error);
+        res.status(500).json({ error: "Failed to fetch submissions" });
+      }
+    });
 
     //  Add new assignment
     app.post('/assignments', async (req, res) => {
